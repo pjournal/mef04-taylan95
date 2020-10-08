@@ -1,0 +1,33 @@
+---
+title: "Week1_RMarkdown_Homework"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+### Hi there, I am Taylan.
+## I am interested in data science and I keep improving my skills.
+
+I have been working as a consultant at EY for about a year. From time to time, I try to improve my skills in projects in the company and sometimes in individual works. You can visit my Linkedin profile here.
+
+[linkedin]: https://www.linkedin.com/in/taylan-polat/
+
+# Interpreting Interaction in LinearRegression (Ladan Hamadani)
+The presenter ***Ladan Hamadani*** describes in the video how he is explaining linear regression model and visualizing data in R. ***Hamadani***, who is the media manager and content editor of the videos. She makes sure that the amazing content is polished and presented in a way that is easy to follow. She also works as a research analyst in health sector.
+In this video, we can observe how the interaction or effect modification between the sample and the two factors is interpreted in a linear regression model.
+
+[Interpreting Interaction in LinearRegression](https://www.youtube.com/watch?v=vZUtDJbzFRQ&list=PLqzoL9-eJTNDw71zWePXyHx3_cm_fMP8S&index=53)
+
+
+
+# Social Network Analysis with R|Examples 
+***Dr. Bharatendra Rai***, is Professor of Business Analytics in the Charlton College of Business at UMass Dartmouth. He teaches courses on topics such as Applied Deep Learning, Analyzing Big Data, Business Analytics & Data Mining, Applied Decision Techniques, & Operations Mgt. 
+
+[Social Network Analysis with R|Examples](https://www.youtube.com/watch?v=0xsM0MbRPGE)
+
+# Simulation in R
+*** Roger D. Peng***, Professor of Biostatistics at the Johns Hopkins Bloomberg School of Public Health. Peng has written or contributed to ten different books, including R Programming for Data Science, which lays the foundation for using the R programming language. He, along with Jeff Leek and Rafa Irizarry, actively contribute to Simply Statistics, a website containing courses, articles, interviews, blog posts, and other materials for statisticians and those interested in data focused on various biostatistics topics. In this video, you can examine the simulation using R from the video in the link.
+
+[Simulation in R](https://www.youtube.com/watch?v=tvv4IA8PEzw&list=PLjTlxb-wKvXPqyY3FZDO8GqIaWuEDy-Od&index=12)
+
+
