@@ -1,0 +1,84 @@
+---
+title: "ClassworkWeek3"
+output: html_document
+---
+
+## R Markdown
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(readxl)
+library(ggplot2)
+library(lubridate)
+
+setwd("C:/Users/taylan.polat/Desktop/MEF")
+
+df <- read_excel("EVDS.xlsx")
+head(df)
+
+```
+
+## Structure of Data
+
+We can see many NA values
+
+```{r}
+str(df)
+```
+
+## Changing Colnames
+
+Since the column names are too long, we update the names so that we can understand.
+
+```{r}
+colnames(df) <- c("Tarih","TP1","TP2","TP3","TP4","TP5","TP6","TP7","TP8")
+head(df)
+```
+
+## Removing Rows
+
+```{r}
+df <- df[38:130,1:9]
+df$TP2 <- as.double(df$TP2)
+df$Tarih <- as.Date(parse_date_time(df$Tarih,"ym"))
+```
+
+```{r}
+ggplot(df, aes(Tarih,TP7,color = "blue"))+
+  geom_point()
+```
+
+We are starting to examine how the TP_AV variable we created for post 2016 has changed according to the date.
+
+```{r}
+df_new <- df %>%
+  filter(TP4 > 9000)%>%
+  arrange(desc(TP8))%>%
+  select(Tarih,TP2,TP3,TP4)%>%
+  mutate(TP_AV = (TP2 * TP3)/TP4)%>%
+  filter(Tarih > "2016-08-01")
+  
+```
+
+```{r}
+head(df_new)
+```
+
+```{r}
+ggplot(df_new,aes(Tarih,TP_AV))+
+  geom_line(linetype = "dashed",color = "red")+
+  geom_point()
+```
+
+## FinalGraph
+
+We can observe the changes in the last 3 years more clearly from the table below.
+
+```{r}
+ggplot()+
+    geom_line(data=df_new,aes(y=TP_AV,x= Tarih,colour="darkblue"),size=1 )+
+    geom_line(data=df_new,aes(y=TP2,x= Tarih,colour="red"),size=1) +
+    geom_line(data=df_new,aes(y=TP3,x= Tarih,colour="green"), size=1)+   
+    scale_color_discrete(name = "DatewithTP", labels = c("TP_AV", "TP2","TP3"))
+```
