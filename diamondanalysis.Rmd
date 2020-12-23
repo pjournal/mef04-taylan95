@@ -1,0 +1,233 @@
+---
+title: "Diamonds-Analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Libraries
+
+```{r}
+library(ggplot2)
+library(tidyverse)
+library(data.table)
+library(plotly)
+library(fastDummies)
+library(reshape2)
+library(metan)
+require(caTools)
+library(rpart)
+library(gensvm)
+library(caret)
+library(outliers)
+```
+
+## EDA
+
+The aim of this study is to examine the relationships and distributions of variables using the Diamonds dataset available in R and finally develop a meaningful price estimation model. You can access and review the libraries used in this study from the Libraries section.
+
+```{r}
+data <- diamonds
+```
+
+## Including Plots
+
+There are 53940 rows and 10 columns in diamonds dataset
+
+```{r}
+dim(data)
+```
+
+```{r}
+head(data)
+```
+
+```{r}
+data %>%glimpse()
+```
+We can see all data summary like median, mean and quartiles
+
+```{r}
+summary(data)
+```
+There is no missing values
+
+```{r}
+sum(is.na(data))
+```
+we can see table variable's distribution, we see that the concentration is mostly around 50-60.
+
+```{r}
+ggplot(data) +
+  aes(x = table) +
+  geom_histogram(bins = 30L, fill = "#0c4c8a") +
+  theme_minimal()
+```
+We can examine the normal and logarithmic normal distribution of our target variable.
+
+```{r}
+par(mfrow=c(1,2))
+qqnorm((diamonds$price),main="Normal Q-Q Plot of Price");qqline((diamonds$price))
+qqnorm(log(diamonds$price),main="Normal Q-Q Plot of log Price");qqline(log(diamonds$price))
+```
+When we examine the x, y and z variables, we see that the average is at Fair level in the cut variable
+
+```{r}
+data %>%
+  select(cut,price,x,y,z)%>%
+  group_by(cut)%>%
+  summarise(mean_price = mean(price),mean_x = mean(x),mean_y = mean(y),mean_z = mean(z))%>%
+  arrange(mean_price,desc())
+```
+When we want to examine the variables with the help of boxplot, we observe that there are outlier values.
+
+```{r}
+data%>%
+  select(x,cut)%>%
+  ggplot(aes(x,color = cut))+
+  geom_boxplot()
+  
+data%>%
+  select(y,cut)%>%
+  ggplot(aes(y,color = cut))+
+  geom_boxplot()
+
+data %>%
+  ggplot(aes(x=cut,y=price, color=cut)) +
+  geom_boxplot()
+```
+
+When the relationship between carat and price is examined, we can say that the price variable also increases as Premium increases.
+
+```{r}
+d <- diamonds[sample(nrow(diamonds), 1000), ]
+
+fig <- plot_ly(
+  d, x = ~carat, y = ~price,
+  # Hover text:
+  text = ~paste("Price: ", price, '$<br>Cut:', cut),
+  color = ~carat, size = ~carat
+)
+
+fig
+```
+
+```{r}
+data %>%
+  group_by(cut) %>%
+  summarise(n=n(), 
+            mean= mean(price), 
+            median=median(price), 
+            Q1= quantile(price,0.25),
+            Q3= quantile(price,0.75))
+```
+
+```{r}
+df <- data[,-c(2,3,4)]
+df <- rm.outlier(df, fill = TRUE, median = TRUE, opposite = FALSE)
+data[,colnames(df)] <- df
+head(data)
+```
+We assign dummies to categorical variables in order to include categorical variables in the model.
+
+```{r}
+data <- dummy_cols(data, select_columns = c("cut","color","clarity"),remove_selected_columns = TRUE)
+```
+
+```{r}
+set.seed(123)
+split = sample.split(data$price, SplitRatio = 0.8)
+training_set = subset(data, split == TRUE)
+test_set = subset(data, split == FALSE)
+```
+
+```{r}
+cormat <- round(cor(training_set),2)
+
+melted_cormat <- melt(cormat)
+
+ggplot(data = melted_cormat, aes(x=Var1, y=Var2, fill=value)) + 
+  geom_tile()
+
+# Get lower triangle of the correlation matrix
+get_lower_tri<-function(cormat){
+  cormat[upper.tri(cormat)] <- NA
+  return(cormat)
+}
+# Get upper triangle of the correlation matrix
+get_upper_tri <- function(cormat){
+  cormat[lower.tri(cormat)]<- NA
+  return(cormat)
+}
+
+upper_tri <- get_upper_tri(cormat)
+
+cormat <- reorder_cormat(cormat)
+upper_tri <- get_upper_tri(cormat)
+# Melt the correlation matrix
+melted_cormat <- melt(upper_tri, na.rm = TRUE)
+# Create a ggheatmap
+ggheatmap <- ggplot(melted_cormat, aes(Var2, Var1, fill = value))+
+  geom_tile(color = "white")+
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                       midpoint = 0, limit = c(-1,1), space = "Lab", 
+                       name="Pearson\nCorrelation") +
+  theme_minimal()+ # minimal theme
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+                                   size = 12, hjust = 1))+
+  coord_fixed()
+
+print(ggheatmap)
+
+ggheatmap + 
+  geom_text(aes(Var2, Var1, label = value), color = "black", size = 2) +
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    axis.ticks = element_blank(),
+    legend.justification = c(1, 0),
+    legend.position = c(0.6, 0.7),
+    legend.direction = "horizontal")+
+  guides(fill = guide_colorbar(barwidth = 7, barheight = 1,
+                               title.position = "top", title.hjust = 0.5))
+
+```
+
+We are scaling on the train and test data that we finally reached. After the scale result is regression run, we leave only the significant variables and run the model again.
+
+```{r}
+training_set = scale(training_set)
+test_set = scale(test_set)
+
+d1 <- data.frame(training_set)
+d2 <- data.frame(test_set)
+
+regressor = lm(formula = price ~ .,
+               data = d1)
+
+
+summary(regressor)
+```
+
+```{r}
+d1 <- d1[,-c(7,12,19,27)]
+d2 <- d2[,-c(7,12,19,27)]
+
+regressor = lm(formula = price ~ .,
+               data = d1)
+
+summary(regressor)
+
+pred <- predict(regressor, newdata = d2)
+
+RMSE(pred = pred, obs = d2$price)
+```
+
+# References
+
+http://www.sthda.com/english/wiki/ggplot2-quick-correlation-matrix-heatmap-r-software-and-data-visualization
